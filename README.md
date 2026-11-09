@@ -1,15 +1,20 @@
 # titanic-disaster
 
-Predicting who survived the sinking of the RMS Titanic (April 15, 1912) with **logistic regression**, built twice: once in **Python** and once in **R**. Each version runs in its own Docker container. Every cleaning step, the model, and the accuracy numbers are printed to the terminal, so you don't need to open the code.
+Who survived the Titanic? This repo predicts it with logistic regression.
+
+There are two versions of the same model: one in **Python** and one in **R**. Each runs in its own Docker container. When you run it, it prints every step to the terminal, so you never need to open the code.
 
 ---
 
-## Quick start (TL;DR)
+## Quick start
+
+If you already have Docker and the data, these commands are all you need:
 
 ```bash
 git clone https://github.com/annachang2027-NU/titanic-disaster.git
 cd titanic-disaster
-mkdir -p src/data          # then put train.csv and test.csv in here (step 2)
+mkdir -p src/data
+# put train.csv and test.csv in src/data/ (see step 2)
 
 docker build -t titanic-python src/python
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-python
@@ -18,189 +23,198 @@ docker build -t titanic-r src/r
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-r
 ```
 
-The rest of this README walks through each step.
+New to this? Follow the steps below.
 
 ---
 
-## 0. Prerequisites
+## 0. What you need
 
-| Tool | Why | Check it's installed |
-|------|-----|----------------------|
-| [Git](https://git-scm.com/downloads) | to clone the repo | `git --version` |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | to build and run the containers | `docker --version` |
-| A free [Kaggle](https://www.kaggle.com/) account | to download the data | — |
+- **Git**, to download this repo. Check with `git --version`.
+- **Docker Desktop**, to run the code. Check with `docker --version`.
+- **A free Kaggle account**, to download the data.
 
-**Docker Desktop must be open and running** before you run any `docker` command. If you see `Cannot connect to the Docker daemon`, start Docker Desktop and wait until it says "Engine running".
+You don't need Python or R on your computer. Docker installs them inside the containers.
 
-You do **not** need Python or R installed on your computer. Docker installs everything inside the containers.
+Before you run any `docker` command, open Docker Desktop. Wait until it says "Engine running".
 
 ---
 
-## 1. Clone the repository
+## 1. Download the repo
 
 ```bash
 git clone https://github.com/annachang2027-NU/titanic-disaster.git
 cd titanic-disaster
 ```
 
-All commands below are run from this `titanic-disaster/` folder (the repo root).
+Run every command below from this `titanic-disaster` folder.
 
 ---
 
-## 2. Download the data
+## 2. Get the data
 
-The dataset is **not** in this repo (per assignment rules, and `src/data/` is in `.gitignore`). Download it from Kaggle:
+The data is not in this repo. You download it from Kaggle yourself.
 
-1. Go to **https://www.kaggle.com/competitions/titanic/data** and sign in.
-2. If prompted, click **"Join Competition"** / **"I Understand and Accept"** (Kaggle requires this before you can download).
-3. Click **"Download All"**. You will get `titanic.zip`.
-4. Unzip it and move the CSV files into `src/data/`:
+1. Go to https://www.kaggle.com/competitions/titanic/data and sign in.
+2. Kaggle may ask you to accept the competition rules. Click accept.
+3. Click **Download All**. You get a file called `titanic.zip`.
+4. Unzip it into `src/data/`:
 
 ```bash
 mkdir -p src/data
 unzip ~/Downloads/titanic.zip -d src/data
 ```
 
-(Or drag the files into `src/data/` by hand.)
+Dragging the files into `src/data/` by hand works too.
 
-<details>
-<summary>Alternative: download with the Kaggle CLI</summary>
-
-```bash
-pip install kaggle   # needs an API token in ~/.kaggle/kaggle.json (Kaggle → Settings → API → Create New Token)
-kaggle competitions download -c titanic -p src/data
-unzip src/data/titanic.zip -d src/data
-```
-</details>
-
-Check that the files are in the right place:
+Now check that the files are there:
 
 ```bash
 ls src/data
 # gender_submission.csv  test.csv  train.csv
 ```
 
-| File | Required? | Contents |
-|------|-----------|----------|
-| `train.csv` | **yes** | 891 passengers **with** the `Survived` label (used to train the model) |
-| `test.csv` | **yes** | 418 passengers **without** the `Survived` label (we predict these) |
-| `gender_submission.csv` | optional | Kaggle's example submission; used for one extra comparison if present |
+What each file is:
+
+- `train.csv` (**needed**): 891 passengers. We know who survived. The model learns from these.
+- `test.csv` (**needed**): 418 passengers. We don't know who survived. The model guesses.
+- `gender_submission.csv` (optional): Kaggle's simple example answer. If it's there, the code compares against it.
+
+<details>
+<summary>Prefer the command line? Use the Kaggle CLI</summary>
+
+You need a Kaggle API token first. Get one at Kaggle → Settings → API → Create New Token. Save it as `~/.kaggle/kaggle.json`.
+
+```bash
+pip install kaggle
+kaggle competitions download -c titanic -p src/data
+unzip src/data/titanic.zip -d src/data
+```
+</details>
 
 ---
 
-## 3. Run the Python model
+## 3. Run the Python version
 
 ```bash
-# Build the image (first time takes ~1 minute)
 docker build -t titanic-python src/python
-
-# Run it, mounting your local data folder into the container
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-python
 ```
 
-## 4. Run the R model
+The first build takes about a minute.
+
+## 4. Run the R version
 
 ```bash
-# Build the image (first time takes a few minutes while R packages install)
 docker build -t titanic-r src/r
-
-# Run it
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-r
 ```
 
-**What the flags mean**
+The first build takes a few minutes, because R installs its packages.
 
-- `-t titanic-python` names the image so you can run it by name.
-- `src/python` (or `src/r`) is the folder containing the `Dockerfile`.
-- `-v "$(pwd)/src/data:/app/data"` shares your `src/data/` folder with the container at `/app/data`. That's how the container reads the CSVs, and how its prediction file ends up back on your computer.
-- `--rm` deletes the container when it finishes, so nothing is left behind.
+### What these commands do
 
-> **Windows users:** run these in PowerShell and replace `$(pwd)` with `${PWD}`, e.g. `docker run --rm -v "${PWD}/src/data:/app/data" titanic-python`. In Command Prompt use `%cd%`.
+- `docker build` makes an image: a packaged copy of the code plus everything it needs.
+- `-t titanic-python` gives the image a name.
+- `src/python` is the folder with the `Dockerfile` in it.
+- `docker run` starts the image.
+- `-v "$(pwd)/src/data:/app/data"` lets the container see your `src/data` folder. It reads the CSVs from there and saves its predictions back there.
+- `--rm` cleans up the container when it's done.
+
+> **On Windows?** In PowerShell, write `${PWD}` instead of `$(pwd)`. In Command Prompt, write `%cd%`.
 
 ---
 
 ## 5. What you'll see
 
-Both scripts print the same six sections:
+Both versions print the same steps:
 
-1. **Load `train.csv`**: shape and first rows.
-2. **Explore**: missing values, and survival rates by sex, class, and port.
-3. **Clean and engineer features**, with one line per change:
-   - `Title` (Mr / Mrs / Miss / Master / Rare) pulled out of `Name`. Uncommon titles become `Rare` for men and `Mrs` for women.
-   - missing `Age` filled with the median age for that title
-   - missing `Embarked` filled with the most common port; missing `Fare` with the median fare
-   - `FamilySize = SibSp + Parch + 1` and `IsAlone` added
-   - `Pclass`, `Embarked`, `Title` one-hot encoded
-   - `Cabin`, `Ticket`, `Name`, `SibSp`, `Parch`, `Sex` dropped. `Sex` is fully captured by `Title`, and keeping both made R's `glm` unstable (a Sex coefficient of 15 with a standard error of 506).
-4. **Logistic regression**: an 80/20 hold-out check, then the final model fit on all 891 rows, with its coefficients.
-5. **Training accuracy**.
-6. **Test set**: `test.csv` gets cleaned the same way (using fill values learned from train only), then predicted. The predictions are saved to `src/data/predictions_python.csv` and `src/data/predictions_r.csv`, both in Kaggle submission format.
+1. **Load the data.** How many rows and columns, and the first few rows.
+2. **Explore.** What's missing, and who survived more often (by sex, class, and port).
+3. **Clean the data.** Each change gets its own line:
+   - Pull the title (Mr, Mrs, Miss, Master) out of each name. Uncommon titles become "Rare" for men and "Mrs" for women.
+   - Fill in missing ages with the typical age for that title. A "Master" is a boy, so he gets a child's age.
+   - Fill in the 2 missing ports with the most common one, and the 1 missing fare with the typical fare.
+   - Add `FamilySize` (how many family members were on board) and `IsAlone`.
+   - Remove columns we don't use: `Cabin` (mostly empty), `Ticket` and `Name` (just text), `SibSp` and `Parch` (now inside `FamilySize`), and `Sex` (see below).
+4. **Train the model.** First a practice run on 80% of the data, then the final model on all of it. The coefficients get printed too.
+5. **Training accuracy.**
+6. **Predict the test set.** The test data gets the same cleaning. Predictions are saved to `src/data/predictions_python.csv` and `src/data/predictions_r.csv`.
+
+**Why remove `Sex`?** The title already tells us it. "Mr" is always a man, and "Mrs" is always a woman. With both in the model, R got confused: the Sex coefficient came out as 15, with an error of 506. Keeping only the title fixed that.
 
 ### Results you should get
 
-| | Python (scikit-learn) | R (glm) |
+| | Python | R |
 |---|---|---|
-| Training accuracy (all 891 rows) | 0.833 | 0.833 |
-| Held-out validation accuracy (20% of train) | 0.832 | 0.837 |
-| Predicted survivors in `test.csv` | 164 / 418 | 169 / 418 |
+| Training accuracy | 0.833 | 0.833 |
+| Accuracy on the 20% held back | 0.832 | 0.837 |
+| Survivors predicted in `test.csv` | 164 of 418 | 169 of 418 |
 | Agreement with `gender_submission.csv` | 0.933 | 0.916 |
 
-The two versions differ slightly because scikit-learn applies a small L2 penalty by default and the random 80/20 splits differ.
+The two versions are close but not identical. Python's model adds a small penalty to keep coefficients small, and R's doesn't. The random 80/20 split is also different in each language.
 
-**Interesting findings from the data:** 74% of women survived but only 19% of men. First class had a 63% survival rate versus 24% in third class. The strongest negative predictors are being titled "Mr" and travelling in third class. Larger families also did worse, with each extra family member lowering the odds of survival.
+### What the data tells us
 
-### A note on test-set accuracy
+- 74% of women survived. Only 19% of men did.
+- 63% of first class survived. Only 24% of third class did.
+- Being a "Mr" or riding in third class were the strongest signs someone would not survive.
+- Bigger families did worse. Each extra family member lowered the odds.
 
-Kaggle **withholds the true `Survived` labels for `test.csv`**, so test accuracy can't be computed locally. The scripts handle this as follows:
+### Why there's no test accuracy
 
-- They print the **held-out validation accuracy** (20% of `train.csv` the model never saw) as the best local estimate.
-- If `gender_submission.csv` is present, they print how often the predictions agree with Kaggle's "women survive, men don't" baseline. This is **not** accuracy, just a sanity check.
-- To get the real test accuracy, upload `predictions_python.csv` or `predictions_r.csv` at https://www.kaggle.com/competitions/titanic/submissions.
-- If you supply a `test.csv` that does contain a `Survived` column, the scripts print the true test accuracy automatically.
+Kaggle keeps the answers for `test.csv` secret, so we can't check our guesses on our own computer. Instead:
+
+- The code holds back 20% of the training data and tests on it. That accuracy is our best guess for how the model does on new data.
+- To get the real test score, upload a prediction file at https://www.kaggle.com/competitions/titanic/submissions.
+- If your `test.csv` happens to include a `Survived` column, the code calculates test accuracy for you.
 
 ---
 
-## Repository structure
+## What's in this repo
 
 ```
 titanic-disaster/
-├── .github/
-│   └── CODEOWNERS            # only the repo owner can approve changes
-├── .gitignore                # ignores src/data/, *.csv, .DS_Store, venvs, etc.
+├── .github/CODEOWNERS       # only the owner can approve changes
+├── .gitignore               # keeps data, .DS_Store, etc. out of git
 ├── README.md
 └── src/
-    ├── data/                 # ← you create this and put the Kaggle CSVs here (git-ignored)
+    ├── data/                # you create this and put the CSVs here (not in git)
     ├── python/
-    │   ├── Dockerfile        # python:3.11-slim, installs requirements.txt, runs the script
-    │   ├── requirements.txt  # pinned: numpy, pandas, scikit-learn
-    │   └── titanic_model.py
+    │   ├── Dockerfile       # builds the Python container
+    │   ├── requirements.txt # Python packages, with exact versions
+    │   └── titanic_model.py # the Python code
     └── r/
-        ├── Dockerfile        # rocker/r-ver:4.4.1, runs install_packages.R, then the script
-        ├── install_packages.R# installs dplyr from a date-frozen CRAN snapshot
-        └── titanic_model.R
+        ├── Dockerfile       # builds the R container
+        ├── install_packages.R # installs R packages
+        └── titanic_model.R  # the R code
 ```
 
 ---
 
-## Troubleshooting
+## If something goes wrong
 
-| Problem | Fix |
-|---------|-----|
-| `Cannot connect to the Docker daemon` | Open Docker Desktop and wait for it to finish starting. |
-| `[ERROR] Could not find /app/data/train.csv` | The CSVs aren't in `src/data/`, or you're not running from the repo root. Run `ls src/data` and check you're in `titanic-disaster/`. |
-| `docker: invalid reference format` on Windows | Use `${PWD}` (PowerShell) or `%cd%` (cmd) instead of `$(pwd)`. |
-| Path contains spaces | Keep the quotes around `"$(pwd)/src/data:/app/data"`. |
+- **"Cannot connect to the Docker daemon"**: Docker Desktop isn't running. Open it and wait a moment.
+- **"Could not find /app/data/train.csv"**: The CSVs aren't in `src/data/`, or you're in the wrong folder. Run `ls src/data` and check you're inside `titanic-disaster`.
+- **"invalid reference format" on Windows**: Use `${PWD}` or `%cd%` instead of `$(pwd)`.
+- **Your folder path has spaces**: Keep the quotes around `"$(pwd)/src/data:/app/data"`.
 
 ---
 
-## Optional: run without Docker
+## Running without Docker (optional)
+
+If you have Python or R installed, you can run the code directly.
 
 ```bash
 # Python
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r src/python/requirements.txt
-python src/python/titanic_model.py          # reads ./src/data by default
+python src/python/titanic_model.py
+```
 
-# R (from the src/r folder, so ../data resolves to src/data)
-cd src/r && Rscript install_packages.R && Rscript titanic_model.R
+```bash
+# R (run from inside src/r)
+cd src/r
+Rscript install_packages.R
+Rscript titanic_model.R
 ```
