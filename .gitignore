@@ -1,0 +1,20 @@
+# Data (download from Kaggle; never commit it)
+src/data/
+data/
+*.csv
+
+# OS / editor hidden files
+.DS_Store
+.Rhistory
+.RData
+.Rproj.user/
+.vscode/
+.idea/
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
