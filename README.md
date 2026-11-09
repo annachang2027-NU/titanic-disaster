@@ -23,7 +23,7 @@ docker build -t titanic-r src/r
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-r
 ```
 
-New to this? Follow the steps below.
+If u are new to this, please follow the steps below.
 
 ---
 
@@ -35,7 +35,7 @@ New to this? Follow the steps below.
 
 You don't need Python or R on your computer. Docker installs them inside the containers.
 
-Before you run any `docker` command, open Docker Desktop. Wait until it says "Engine running".
+Before you run any `docker` command, open Docker Desktop. You need to wait until it says "Engine running".
 
 ---
 
@@ -109,7 +109,7 @@ docker build -t titanic-r src/r
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-r
 ```
 
-The first build takes a few minutes, because R installs its packages.
+The first build takes a few minutes because R installs its packages.
 
 ### What these commands do
 
