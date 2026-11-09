@@ -6,6 +6,22 @@ This repo includes two versions of the same model: one in **Python** and one in 
 
 ---
 
+## Contents
+
+- [Quick start](#quick-start)
+- [0. What you need](#0-what-you-need)
+- [1. Download the repo](#1-download-the-repo)
+- [2. Get the data](#2-get-the-data)
+- [3. Run the Python version](#3-run-the-python-version)
+- [4. Run the R version](#4-run-the-r-version)
+- [5. What you'll see](#5-what-youll-see)
+  - [Results you should get](#results-you-should-get)
+  - [What the data tells us](#what-the-data-tells-us)
+  - [Why there's no test accuracy](#why-theres-no-test-accuracy)
+- [What's in this repo](#whats-in-this-repo)
+- [If something goes wrong](#if-something-goes-wrong)
+- [Running without Docker (optional)](#running-without-docker-optional)
+
 ## Quick start
 
 If you already have Docker and the data, these commands are all you need:
