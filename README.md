@@ -126,15 +126,28 @@ Both scripts print the same six sections:
 1. **Load `train.csv`**: shape and first rows.
 2. **Explore**: missing values, and survival rates by sex, class, and port.
 3. **Clean and engineer features**, with one line per change:
-   - `Title` (Mr / Mrs / Miss / Master / Rare) pulled out of `Name`
+   - `Title` (Mr / Mrs / Miss / Master / Rare) pulled out of `Name`. Uncommon titles become `Rare` for men and `Mrs` for women.
    - missing `Age` filled with the median age for that title
    - missing `Embarked` filled with the most common port; missing `Fare` with the median fare
    - `FamilySize = SibSp + Parch + 1` and `IsAlone` added
-   - `Sex` encoded as 0/1; `Pclass`, `Embarked`, `Title` one-hot encoded
-   - `Cabin`, `Ticket`, `Name`, `SibSp`, `Parch` dropped
+   - `Pclass`, `Embarked`, `Title` one-hot encoded
+   - `Cabin`, `Ticket`, `Name`, `SibSp`, `Parch`, `Sex` dropped. `Sex` is fully captured by `Title`, and keeping both made R's `glm` unstable (a Sex coefficient of 15 with a standard error of 506).
 4. **Logistic regression**: an 80/20 hold-out check, then the final model fit on all 891 rows, with its coefficients.
 5. **Training accuracy**.
 6. **Test set**: `test.csv` gets cleaned the same way (using fill values learned from train only), then predicted. The predictions are saved to `src/data/predictions_python.csv` and `src/data/predictions_r.csv`, both in Kaggle submission format.
+
+### Results you should get
+
+| | Python (scikit-learn) | R (glm) |
+|---|---|---|
+| Training accuracy (all 891 rows) | 0.833 | 0.833 |
+| Held-out validation accuracy (20% of train) | 0.832 | 0.837 |
+| Predicted survivors in `test.csv` | 164 / 418 | 169 / 418 |
+| Agreement with `gender_submission.csv` | 0.933 | 0.916 |
+
+The two versions differ slightly because scikit-learn applies a small L2 penalty by default and the random 80/20 splits differ.
+
+**Interesting findings from the data:** 74% of women survived but only 19% of men. First class had a 63% survival rate versus 24% in third class. The strongest negative predictors are being titled "Mr" and travelling in third class. Larger families also did worse, with each extra family member lowering the odds of survival.
 
 ### A note on test-set accuracy
 

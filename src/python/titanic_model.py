@@ -23,7 +23,7 @@ DATA_DIR = os.environ.get("DATA_DIR", os.path.join(HERE, "..", "data"))
 RANDOM_STATE = 42
 
 FEATURES = [
-    "Pclass", "Sex", "Age", "Fare", "Embarked",
+    "Pclass", "Age", "Fare", "Embarked",
     "Title", "FamilySize", "IsAlone",
 ]
 CATEGORICAL = ["Pclass", "Embarked", "Title"]
@@ -47,12 +47,18 @@ def load_csv(name):
     return pd.read_csv(path)
 
 
-def extract_title(name_col):
-    """Pull the honorific ('Mr', 'Mrs', ...) out of 'Last, Title. First'."""
+def extract_title(name_col, sex_col):
+    """Pull the honorific ('Mr', 'Mrs', ...) out of 'Last, Title. First'.
+
+    Uncommon titles become 'Rare' for men and 'Mrs' for women (Lady, Countess,
+    Dona, Dr), so Title fully encodes Sex as well as age / marital status.
+    """
     title = name_col.str.extract(r",\s*([^\.]+)\.", expand=False).str.strip()
     title = title.replace({"Mlle": "Miss", "Ms": "Miss", "Mme": "Mrs"})
     common = {"Mr", "Mrs", "Miss", "Master"}
-    return title.where(title.isin(common), "Rare")
+    rare = ~title.isin(common)
+    title = title.mask(rare & (sex_col == "female"), "Mrs")
+    return title.mask(rare & (sex_col == "male"), "Rare")
 
 
 def clean(df, fill_values, name):
@@ -60,8 +66,8 @@ def clean(df, fill_values, name):
     df = df.copy()
     section(f"Cleaning & feature engineering: {name}")
 
-    df["Title"] = extract_title(df["Name"])
-    print("[add] Title extracted from Name. Counts:")
+    df["Title"] = extract_title(df["Name"], df["Sex"])
+    print("[add] Title extracted from Name (rare titles -> 'Rare' for men, 'Mrs' for women). Counts:")
     print(df["Title"].value_counts().to_string())
 
     n_age = df["Age"].isna().sum()
@@ -84,13 +90,11 @@ def clean(df, fill_values, name):
     print("[add] FamilySize = SibSp + Parch + 1; IsAlone = 1 if FamilySize == 1. "
           f"Passengers travelling alone: {df['IsAlone'].sum()} of {len(df)}")
 
-    df["Sex"] = (df["Sex"] == "female").astype(int)
-    print("[encode] Sex -> 1 = female, 0 = male")
-
-    dropped = ["Cabin", "Ticket", "Name", "SibSp", "Parch"]
+    dropped = ["Cabin", "Ticket", "Name", "SibSp", "Parch", "Sex"]
     df = df.drop(columns=dropped)
-    print(f"[drop] {dropped} (Cabin is ~77% missing; Ticket/Name are free text; "
-          "SibSp/Parch are replaced by FamilySize)")
+    print(f"[drop] {dropped} (Cabin is mostly missing; Ticket/Name are free text; "
+          "SibSp/Parch are replaced by FamilySize;\n       Sex is fully captured by "
+          "Title, and keeping both makes the coefficients unstable)")
 
     print(f"Remaining missing values: {int(df[FEATURES].isna().sum().sum())}")
     return df
@@ -129,7 +133,7 @@ def main():
     print(train_raw.groupby("Embarked")["Survived"].mean().round(3).to_string())
 
     # Fill values are learned from TRAIN only, then reused on test (no leakage)
-    titles = extract_title(train_raw["Name"])
+    titles = extract_title(train_raw["Name"], train_raw["Sex"])
     fill_values = {
         "age_by_title": train_raw.groupby(titles)["Age"].median().to_dict(),
         "embarked_mode": train_raw["Embarked"].mode()[0],

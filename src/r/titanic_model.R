@@ -25,10 +25,14 @@ load_csv <- function(name) {
   read.csv(path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
 }
 
-extract_title <- function(name) {
+# Uncommon titles become "Rare" for men and "Mrs" for women (Lady, Countess,
+# Dona, Dr), so Title fully encodes Sex as well as age / marital status.
+extract_title <- function(name, sex) {
   title <- trimws(sub("^.*?,\\s*([^.]+)\\..*$", "\\1", name))
   title <- recode(title, Mlle = "Miss", Ms = "Miss", Mme = "Mrs")
-  ifelse(title %in% c("Mr", "Mrs", "Miss", "Master"), title, "Rare")
+  rare <- !title %in% c("Mr", "Mrs", "Miss", "Master")
+  title[rare] <- ifelse(sex[rare] == "female", "Mrs", "Rare")
+  title
 }
 
 accuracy <- function(truth, pred) mean(truth == pred)
@@ -43,8 +47,8 @@ print_rate <- function(df, var) {
 clean <- function(df, fills, name) {
   section(paste("Cleaning & feature engineering:", name))
 
-  df$Title <- extract_title(df$Name)
-  cat("[add] Title extracted from Name. Counts:\n")
+  df$Title <- extract_title(df$Name, df$Sex)
+  cat("[add] Title extracted from Name (rare titles -> 'Rare' for men, 'Mrs' for women). Counts:\n")
   print(table(df$Title))
 
   n_age <- sum(is.na(df$Age))
@@ -72,25 +76,25 @@ clean <- function(df, fills, name) {
               sum(df$IsAlone), nrow(df)))
 
   df <- df %>% mutate(
-    Sex = as.integer(Sex == "female"),
     Pclass = factor(Pclass, levels = c(1, 2, 3)),
     Embarked = factor(Embarked, levels = c("C", "Q", "S")),
     Title = factor(Title, levels = c("Master", "Miss", "Mr", "Mrs", "Rare"))
   )
-  cat("[encode] Sex -> 1 = female, 0 = male; Pclass, Embarked, Title -> factors\n")
+  cat("[encode] Pclass, Embarked, Title -> factors (glm creates the dummy variables)\n")
 
-  dropped <- c("Cabin", "Ticket", "Name", "SibSp", "Parch")
+  dropped <- c("Cabin", "Ticket", "Name", "SibSp", "Parch", "Sex")
   df <- df %>% select(-all_of(dropped))
-  cat(sprintf(paste("[drop] %s (Cabin is ~77%% missing; Ticket/Name are free text;",
-                    "SibSp/Parch are replaced by FamilySize)\n"),
+  cat(sprintf(paste("[drop] %s (Cabin is mostly missing; Ticket/Name are free text;",
+                    "SibSp/Parch are replaced by FamilySize;\n       Sex is fully captured by",
+                    "Title, and keeping both makes the coefficients unstable)\n"),
               paste(dropped, collapse = ", ")))
 
-  model_vars <- c("Pclass", "Sex", "Age", "Fare", "Embarked", "Title", "FamilySize", "IsAlone")
+  model_vars <- c("Pclass", "Age", "Fare", "Embarked", "Title", "FamilySize", "IsAlone")
   cat("Remaining missing values:", sum(is.na(df[, model_vars])), "\n")
   df
 }
 
-FORMULA <- Survived ~ Pclass + Sex + Age + Fare + Embarked + Title + FamilySize + IsAlone
+FORMULA <- Survived ~ Pclass + Age + Fare + Embarked + Title + FamilySize + IsAlone
 
 predict_class <- function(model, newdata) {
   as.integer(predict(model, newdata = newdata, type = "response") > 0.5)
@@ -117,7 +121,7 @@ cat("\nSurvival rate by Sex:\n");      print_rate(train_raw, "Sex")
 cat("\nSurvival rate by Pclass:\n");   print_rate(train_raw, "Pclass")
 cat("\nSurvival rate by Embarked:\n"); print_rate(filter(train_raw, !is.na(Embarked)), "Embarked")
 
-train_titles <- extract_title(train_raw$Name)
+train_titles <- extract_title(train_raw$Name, train_raw$Sex)
 fills <- list(
   age_by_title  = tapply(train_raw$Age, train_titles, median, na.rm = TRUE),
   embarked_mode = names(which.max(table(train_raw$Embarked))),
