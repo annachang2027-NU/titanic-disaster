@@ -2,7 +2,7 @@
 
 Who survived the Titanic? This repo predicts it with logistic regression.
 
-There are two versions of the same model: one in **Python** and one in **R**. Each runs in its own Docker container. When you run it, it prints every step to the terminal, so you never need to open the code.
+This repo includes two versions of the same model: one in **Python** and one in **R**. Each has its own Docker container and prints each step in the terminal, so you can follow along without opening the code.
 
 ---
 
@@ -23,7 +23,7 @@ docker build -t titanic-r src/r
 docker run --rm -v "$(pwd)/src/data:/app/data" titanic-r
 ```
 
-If u are new to this, please follow the steps below.
+If you are new to this, please follow the steps below.
 
 ---
 
@@ -35,7 +35,7 @@ If u are new to this, please follow the steps below.
 
 You don't need Python or R on your computer. Docker installs them inside the containers.
 
-Before you run any `docker` command, open Docker Desktop. You need to wait until it says "Engine running".
+Before you run any `docker` command, open Docker Desktop. Wait until it says "Engine running".
 
 ---
 
